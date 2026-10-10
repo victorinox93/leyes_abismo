@@ -223,15 +223,27 @@ export class SanctuaryScene extends Phaser.Scene {
       draw(false);
       c.add(g);
       c.add(icon(this, x, y + 50, b.icon, 6).setAlpha(owned ? 0.3 : 1));
-      c.add(txt(this, x, y + 98, b.name, n >= 4 ? 19 : 22, owned ? CSS.dim : esDuo ? '#f0c070' : CSS.bone, { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0));
-      c.add(txt(this, x, y + 148, owned ? T.santuario.yaLoTienes : esDuo ? `✦ Dúo con ${nombreDe(b.duo!.find((f) => f !== fig.id)!)}` : epic ? T.santuario.epico : T.santuario.comun, n >= 4 ? 15 : 18,
-        owned ? CSS.dim : esDuo ? CSS.gold : epic ? CSS.gold : '#b8c0d0', { align: 'center', wordWrap: { width: ancho - 16 } }).setOrigin(0.5, 0));
+      // los textos se apilan según su alto real y se encogen hasta caber en la caja (y … y+282)
+      const nombreT = txt(this, x, 0, b.name, n >= 4 ? 19 : 22, owned ? CSS.dim : esDuo ? '#f0c070' : CSS.bone, { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0);
+      const etiquetaT = txt(this, x, 0, owned ? T.santuario.yaLoTienes : esDuo ? `✦ Dúo con ${nombreDe(b.duo!.find((f) => f !== fig.id)!)}` : epic ? T.santuario.epico : T.santuario.comun, n >= 4 ? 15 : 18,
+        owned ? CSS.dim : esDuo ? CSS.gold : epic ? CSS.gold : '#b8c0d0', { align: 'center', wordWrap: { width: ancho - 16 } }).setOrigin(0.5, 0);
       // el texto puede traer una segunda parte con el costo de radiación
       const [good, rad] = b.text[epic ? 1 : 0].split('\nRadiación:');
-      const gt = txt(this, x, y + 176, good, n >= 4 ? 16 : 18, CSS.bone, { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0);
-      c.add(gt);
-      if (rad) c.add(txt(this, x, gt.y + gt.height + 6, `Radiación:${rad}`, 16, '#9bf07a', { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0));
-      else if (n < 4) c.add(txt(this, x, y + 250, b.lore, 15, '#7a8a9a', { align: 'center', wordWrap: { width: 170 } }).setOrigin(0.5, 0));
+      const efectoT = txt(this, x, 0, good, n >= 4 ? 16 : 18, CSS.bone, { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0);
+      const radT = rad ? txt(this, x, 0, `Radiación:${rad}`, 16, '#9bf07a', { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0) : null;
+      const loreT = !rad && n < 4 ? txt(this, x, 0, b.lore, 15, '#7a8a9a', { align: 'center', wordWrap: { width: ancho - 20 } }).setOrigin(0.5, 0) : null;
+      const textos = [nombreT, etiquetaT, efectoT, radT, loreT].filter((t): t is Phaser.GameObjects.Text => !!t);
+      const base = textos.map((t) => Number.parseInt(String(t.style.fontSize), 10) || 16);
+      const fondo = y + 282;
+      const acomodar = () => {
+        let yy = y + 92;
+        textos.forEach((t, k) => { t.setY(yy); yy += t.height + (k === 0 ? 4 : 8); });
+        return yy - 8;
+      };
+      // primero se encoge; si aun así no cabe, la cita (lore) se queda sólo en el tooltip
+      for (let k = 0; acomodar() > fondo && k < 4; k++) textos.forEach((t, i) => t.setFontSize(Math.max(13, base[i] - k - 1)));
+      if (acomodar() > fondo && loreT) { textos.pop(); loreT.destroy(); acomodar(); }
+      textos.forEach((t) => c.add(t));
       if (!owned) {
         const z = this.add.zone(x - ancho / 2, y, ancho, 290).setOrigin(0).setInteractive({ useHandCursor: true });
         z.on('pointerover', (p: Phaser.Input.Pointer) => { draw(true); audio.sfx('hover'); this.tip.show(p.worldX + 20, 452, b.name, b.lore); });

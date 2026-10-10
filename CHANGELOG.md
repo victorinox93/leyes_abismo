@@ -2,6 +2,10 @@
 
 Lo más reciente primero. El resumen del juego está en el [README](README.md).
 
+## v0.31.1 · Dones legibles
+
+- Santuario: el nombre, la etiqueta, el efecto, la radiación y la cita de cada don se apilan según su alto real y se encogen si hace falta; si aun así no cabe, la cita queda sólo en el tooltip. Ya no se salen de la caja (p. ej. con Bayes o con 4 opciones por un dúo).
+
 ## v0.31.0 · Mecha «Inercia-01», créditos y README
 
 - **Último desbloqueable:** armadura completa **Mecha «Inercia-01»** (diseño original: cresta de una aleta, visor horizontal, propulsores, escudo con anillo y rifle de haz). Reemplaza todo el cuerpo del héroe y conserva el color de capa y de visor del alumno; los accesorios se le acomodan. Se desbloquea con el logro platino **«Piloto de élite»: conseguir todos los demás logros**. Se equipa en Vestidor → Armaduras. Arte en `src/art/mecha.ts` (generador `tools/arte/mecha.py`).
