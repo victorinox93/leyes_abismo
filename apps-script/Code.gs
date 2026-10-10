@@ -52,6 +52,7 @@ function onOpen() {
     .addItem('Configurar hojas', 'setup')
     .addItem('Actualizar panel cada hora', 'instalarDisparador')
     .addSeparator()
+    .addItem('Calcular ganancia de aprendizaje (Hake)', 'calcularGanancia')
     .addItem('Generar evidencia (reporte del proyecto)', 'generarEvidencia')
     .addItem('Crear formulario de retroalimentación', 'crearFormulario')
     .addSeparator()
@@ -496,6 +497,7 @@ function actualizarPanel() {
   cs.setFrozenRows(1);
   cs.autoResizeColumns(1, ch.length);
   resumenGrupos_(ss, alumnos, partidas, eventos);
+  try { ganancia_(ss, alumnos, eventos); } catch (e) { Logger.log('ganancia: ' + e); }
   panel.getRange(1, 16).setValue('Actualizado: ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'));
 }
 
@@ -649,3 +651,90 @@ function avisosHuellas_(mat) {
   return out;
 }
 
+
+// ───────────────────────── v0.32 · Diagnóstico inicial/final y ganancia de Hake ─────────────────────────
+// Eventos tipo diag_pre / diag_post (detalle: aciertos, total, items "d1:1,d2:0,…", segundos).
+// Por alumno se usa el PRIMER inicial y el ÚLTIMO final.
+// g individual = (final − inicial) / (total − inicial)   (no se calcula si el inicial fue perfecto)
+// <g> de Hake del grupo = (%final prom − %inicial prom) / (100 − %inicial prom), sólo con alumnos que tienen ambos.
+// Niveles (Hake, 1998): baja < 0.3 ≤ media < 0.7 ≤ alta.
+function calcularGanancia() {
+  var ss = SpreadsheetApp.getActive();
+  var r = ganancia_(ss, rows_('Alumnos'), rows_('Eventos'));
+  SpreadsheetApp.getUi().alert('Ganancia de aprendizaje', r, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function ganancia_(ss, alumnos, eventos) {
+  var info = {};
+  alumnos.forEach(function (a) { info[a[0]] = { grupo: a[1], alias: a[2] }; });
+  var al = {}, items = {};
+  eventos.forEach(function (e) {
+    if (e[4] !== 'diag_pre' && e[4] !== 'diag_post') return;
+    var d; try { d = JSON.parse(e[7] || '{}'); } catch (x) { return; }
+    var s = al[e[1]] || (al[e[1]] = { mat: e[1], grupo: e[2] });
+    var fase = e[4] === 'diag_pre' ? 'pre' : 'post';
+    if (fase === 'pre' && s.pre) return; // el primer inicial manda
+    s[fase] = { ac: num_(d.aciertos), tot: num_(d.total) || 8, fecha: e[0], seg: num_(d.segundos), items: String(d.items || '') };
+  });
+  var nivel = function (g) { return g === '' ? '' : g >= 0.7 ? 'alta' : g >= 0.3 ? 'media' : g > 0 ? 'baja' : 'sin mejora'; };
+  var filas = [], grupos = {};
+  Object.keys(al).forEach(function (m) {
+    var s = al[m], pre = s.pre, post = s.post;
+    var g = pre && post && pre.ac < pre.tot ? (post.ac - pre.ac) / (pre.tot - pre.ac) : '';
+    var gr = (info[m] && info[m].grupo) || s.grupo;
+    filas.push([m, gr, (info[m] && info[m].alias) || '', pre ? pre.ac : '', post ? post.ac : '', pre ? pre.ac / pre.tot : '', post ? post.ac / post.tot : '', g, nivel(g),
+      pre ? pre.fecha : '', post ? post.fecha : '', pre ? Math.round(pre.seg / 6) / 10 : '']);
+    var G = grupos[gr] || (grupos[gr] = { conPre: 0, pares: 0, sPre: 0, sPost: 0, sg: 0, ng: 0 });
+    if (pre) G.conPre++;
+    if (pre && post) { G.pares++; G.sPre += pre.ac / pre.tot; G.sPost += post.ac / post.tot; }
+    if (g !== '') { G.sg += g; G.ng++; }
+    // aciertos por pregunta (inicial vs final)
+    [['pre', pre], ['post', post]].forEach(function (f) {
+      if (!f[1]) return;
+      f[1].items.split(',').forEach(function (p) {
+        var kv = p.split(':'); if (!kv[0]) return;
+        var it = items[kv[0]] || (items[kv[0]] = { pre: [0, 0], post: [0, 0] });
+        it[f[0]][1]++; if (kv[1] === '1') it[f[0]][0]++;
+      });
+    });
+  });
+  var sh = ss.getSheetByName('Diagnóstico') || ss.insertSheet('Diagnóstico');
+  sh.clear();
+  var hdr = function (row, vals) { sh.getRange(row, 1, 1, vals.length).setValues([vals]).setFontWeight('bold').setBackground('#221c2a').setFontColor('#e8c15a'); };
+  var row = 1;
+  sh.getRange(row, 1).setValue('Ganancia de aprendizaje normalizada (Hake) · g = (final − inicial) / (100 % − inicial) · baja < 0.3 ≤ media < 0.7 ≤ alta').setFontWeight('bold');
+  row += 2;
+  hdr(row, ['Grupo', 'Con inicial', 'Con inicial y final', '% inicial (prom.)', '% final (prom.)', '<g> de Hake', 'g individual (prom.)', 'Nivel']);
+  var resumen = [];
+  Object.keys(grupos).sort().forEach(function (k) {
+    var G = grupos[k];
+    var pi = G.pares ? G.sPre / G.pares : '', pf = G.pares ? G.sPost / G.pares : '';
+    var gH = G.pares && pi < 1 ? (pf - pi) / (1 - pi) : '';
+    resumen.push([k, G.conPre, G.pares, pi, pf, gH, G.ng ? G.sg / G.ng : '', nivel(gH)]);
+  });
+  var txt = 'Aún no hay diagnósticos.';
+  if (resumen.length) {
+    sh.getRange(row + 1, 1, resumen.length, 8).setValues(resumen);
+    sh.getRange(row + 1, 4, resumen.length, 2).setNumberFormat('0%');
+    sh.getRange(row + 1, 6, resumen.length, 2).setNumberFormat('0.00');
+    txt = resumen.map(function (r) { return r[0] + ': ' + r[2] + ' alumnos con ambos · <g> = ' + (r[5] === '' ? '—' : Number(r[5]).toFixed(2) + ' (' + r[7] + ')'); }).join('\n');
+  }
+  row += resumen.length + 3;
+  hdr(row, ['Pregunta', '% aciertos inicial', 'Respuestas inicial', '% aciertos final', 'Respuestas final']);
+  var it = Object.keys(items).sort().map(function (k) {
+    var x = items[k];
+    return [k, x.pre[1] ? x.pre[0] / x.pre[1] : '', x.pre[1], x.post[1] ? x.post[0] / x.post[1] : '', x.post[1]];
+  });
+  if (it.length) { sh.getRange(row + 1, 1, it.length, 5).setValues(it); sh.getRange(row + 1, 2, it.length, 1).setNumberFormat('0%'); sh.getRange(row + 1, 4, it.length, 1).setNumberFormat('0%'); }
+  row += it.length + 3;
+  hdr(row, ['Matrícula', 'Grupo', 'Alias', 'Inicial (aciertos)', 'Final (aciertos)', '% inicial', '% final', 'g', 'Nivel', 'Fecha inicial', 'Fecha final', 'Min. inicial']);
+  filas.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])) || String(a[0]).localeCompare(String(b[0])); });
+  if (filas.length) {
+    sh.getRange(row + 1, 1, filas.length, 12).setValues(filas);
+    sh.getRange(row + 1, 6, filas.length, 2).setNumberFormat('0%');
+    sh.getRange(row + 1, 8, filas.length, 1).setNumberFormat('0.00');
+    sh.getRange(row + 1, 10, filas.length, 2).setNumberFormat('dd/mm/yyyy hh:mm');
+  }
+  sh.autoResizeColumns(1, 12);
+  return txt + '\n\nDetalle en la hoja «Diagnóstico».';
+}

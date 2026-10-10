@@ -13,9 +13,19 @@ import { ALMA_IDS } from '../data/almas';
 import { progresoGrimorio } from './Codex';
 import { REGALO_DIARIO } from '../data/tienda';
 import { BAYES_EXPEDICIONES } from '../data/figures';
+import { DIAG_POST_EXPEDICIONES, DIAGNOSTICO } from '../data/diagnostico';
 import { MOMENTUM_POR_AYUDA, TOPE_AYUDAS } from '../huellas';
 import { amVencido, claseJugable, codexFlag, expediciones, ganarMomentum, momentum, tiendaAbierta, regaloDiario, clearSession, Game, isAdmin, nucleoDisponible, nivelActual, logEvent, newRun, saveLocal, syncRun, unlock } from '../state';
 import { button, dungeonBackground, embers, fadeTo, frame, panel, title, torch, txt } from '../ui/widgets';
+
+/** ¿Qué diagnóstico toca? (el profesor no lo hace) */
+function diagPendiente(): 'pre' | 'post' | null {
+  if (isAdmin()) return null;
+  const d = Game.codex.diag ?? {};
+  if (d.pre === undefined) return 'pre';
+  if (d.post === undefined && expediciones() >= DIAG_POST_EXPEDICIONES) return 'post';
+  return null;
+}
 
 /** los avisos de huellas se piden una vez por sesión */
 let avisosPedidos = false;
@@ -23,7 +33,7 @@ let avisosPedidos = false;
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
 
-  create() {
+  create(data: { iniciar?: boolean } = {}) {
     this.iniciando = false;
     this.cameras.main.fadeIn(300);
     audio.play('menu');
@@ -83,7 +93,16 @@ export class MenuScene extends Phaser.Scene {
       button(this, x, y, 330, 48, `${T.menu.continuar} (${T.hud.piso.toLowerCase()} ${run.floor + 1})`, () => fadeTo(this, 'Map'), { color: UI.gold, size: 24 });
       y += 58;
     }
-    button(this, x, y, 330, 48, run ? T.menu.nueva : T.menu.comenzar, () => this.pickGravity(), { color: run ? UI.border : UI.blood, size: 26 });
+    button(this, x, y, 330, 48, run ? T.menu.nueva : T.menu.comenzar, () => {
+      // v0.32: diagnóstico inicial antes de la primera expedición y final al cumplir DIAG_POST_EXPEDICIONES
+      const fase = diagPendiente();
+      if (fase) return fadeTo(this, 'Diagnostico', { fase, luego: 'expedicion' });
+      this.pickGravity();
+    }, { color: run ? UI.border : UI.blood, size: 26 });
+    if (diagPendiente() === 'post') {
+      const t = txt(this, x, y + 30, `📝 Toca tu diagnóstico final (${DIAGNOSTICO.length} preguntas, ~4 min)`, 15, CSS.gold).setOrigin(0.5, 0);
+      this.tweens.add({ targets: t, alpha: 0.5, duration: 900, yoyo: true, repeat: -1 });
+    }
     y += 64;
     const grid: [string, () => void][] = [
       [T.menu.grimorio, () => fadeTo(this, 'Codex')],
@@ -119,6 +138,8 @@ export class MenuScene extends Phaser.Scene {
       button(this, x - 84 + (i % 2) * 168, y + Math.floor(i / 2) * 46, 160, 40, label, fn, { size: label.length > 14 ? 16 : 20 });
     });
     if (isAdmin()) button(this, x, y + Math.ceil(grid.length / 2) * 46, 330, 38, 'Modo profesor (depuración)', () => fadeTo(this, 'Debug'), { color: 0x9a4040, size: 21 });
+    // al volver del diagnóstico inicial: directo a elegir la gravedad
+    if (data.iniciar) this.time.delayedCall(400, () => this.pickGravity());
   }
 
   /** v0.30: ¿tus signos ayudaron a alguien? ¿honraron tu lápida? (una vez por sesión) */

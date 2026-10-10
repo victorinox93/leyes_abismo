@@ -106,6 +106,8 @@ export class DebugScene extends Phaser.Scene {
       ['M. ambulante', () => this.go(acto(), 'Shop', { floor: 4, ambulante: true })],
       ['Grieta III→IV', () => this.go(3, 'ActTransition', { to: 4 })],
       ['Myriam', () => this.go(acto(), 'Myriam', { floor: 3 })],
+      ['Diag. inicial', () => fadeTo(this, 'Diagnostico', { fase: 'pre' })],
+      ['Diag. final', () => fadeTo(this, 'Diagnostico', { fase: 'post' })],
       ['Eco molesto', () => { this.go(acto(), 'Sanctuary', { floor: 2, figureId: 'newton' }); Game.run!.boons.push({ id: FIGURES.find((f) => f.id === 'hooke')!.boons[0], epic: false }); }],
       ['Eco dúo', () => { this.go(acto(), 'Sanctuary', { floor: 2, figureId: 'newton', phase: 'elegir', epic: true }); Game.run!.boons.push({ id: FIGURES.find((f) => f.id === 'galileo')!.boons[0], epic: false }); }],
       [`Fin + ${CORTO[ALMA_IDS[OPTS.alma % ALMA_IDS.length]] ?? 'alma'}`, () => { const id = ALMA_IDS[OPTS.alma++ % ALMA_IDS.length]; this.go(acto(), 'End', { victory: true }); Game.run!.aliado = id; }],

@@ -139,6 +139,7 @@ export interface Codex {
   regalo?: string; // último día (AAAA-MM-DD) en que Layla dio su regalo diario
   expediciones?: number; // expediciones terminadas (muerte o victoria); abre la Tienda de Layla
   bajas?: Record<string, number>; // v0.31.2: enemigos vencidos por id (pantalla de Estadísticas)
+  diag?: { pre?: number; post?: number; total?: number; version?: number }; // v0.32: diagnóstico inicial y final (aciertos)
 }
 export type CodexKind = 'enemies' | 'npcs' | 'figures' | 'cards' | 'relics' | 'boons' | 'effects';
 
@@ -167,6 +168,7 @@ export function mergeCodex(a: Partial<Codex> | null | undefined, b: Partial<Code
   const bajas: Record<string, number> = { ...(a?.bajas ?? {}) };
   for (const [k, v] of Object.entries(b?.bajas ?? {})) bajas[k] = Math.max(bajas[k] ?? 0, v);
   if (Object.keys(bajas).length) c.bajas = bajas;
+  if (a?.diag || b?.diag) c.diag = { ...(b?.diag ?? {}), ...(a?.diag ?? {}) }; // el primer registro manda
   c.compras = [...new Set([...(a?.compras ?? []), ...(b?.compras ?? [])])];
   const rg = [a?.regalo ?? '', b?.regalo ?? ''].sort().pop();
   if (rg) c.regalo = rg;

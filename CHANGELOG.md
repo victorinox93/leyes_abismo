@@ -2,6 +2,13 @@
 
 Lo más reciente primero. El resumen del juego está en el [README](README.md).
 
+## v0.32.0 · Diagnóstico inicial y final
+
+- **8 preguntas conceptuales** (~4 min, sin cálculos, distintas de las del juego): inercia, 2ª y 3ª ley, fricción, trabajo, energía, impulso y cantidad de movimiento. Opciones barajadas y botón «No lo sé». Se editan en `src/data/diagnostico.ts`.
+- **Inicial:** obligatorio antes de la primera expedición, sin mostrar resultados. **Final:** las mismas preguntas, obligatorio al cumplir 6 expediciones (`DIAG_POST_EXPEDICIONES`); al terminarlo el alumno ve su inicial, su final y su ganancia g. Cada uno da +2 ◈ Momentum por completarlo.
+- **Hoja «Diagnóstico»** (menú Criptas → «Calcular ganancia de aprendizaje (Hake)», y también al actualizar el panel): por grupo, <g> de Hake con los promedios y el promedio de g individuales; % de aciertos por pregunta antes y después; y una fila por alumno con g y su nivel (baja < 0.3 ≤ media < 0.7 ≤ alta).
+- El modo profesor puede probarlo («Diag. inicial» / «Diag. final») sin que se registre.
+
 ## v0.31.2 · Estadísticas más útiles
 
 - **Estadísticas de Bayes en tres columnas:** resumen (ahora con combates ganados, élites y enemigos vencidos), **jefes derrotados** con su conteo (Coloso, Bruja, Hibbelerius y AM, que sigue oculto hasta abrir el Núcleo), **quién te ha vencido más** (top 3) y **a quién has vencido más** (top 3), y los temas.

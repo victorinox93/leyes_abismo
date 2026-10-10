@@ -16,6 +16,7 @@ Roguelike de cartas *dark fantasy* para aprender **Dinámica** (Universidad de M
 | **Preguntas** | Problemas numéricos con datos al azar y preguntas conceptuales de opción múltiple. Siempre muestran la solución; al final se repasan los temas fallados |
 | **Progreso** | Conocimiento por niveles (desbloquea cartas y cosméticos), Grimorio, 13 logros, Vestidor y la **Tienda de Layla** (95 accesorios pagados con *Momentum*, con oferta diaria) |
 | **Entre compañeros** | Ranking por grupo, **lápidas** donde murió un compañero y **signos dorados** para invocar a quien ya venció a un jefe (estilo «Souls», sólo dentro del grupo y con alias) |
+| **Diagnóstico** | 8 preguntas conceptuales (~4 min) antes de la primera expedición y otra vez a las 6 expediciones. La hoja calcula la **ganancia de aprendizaje normalizada de Hake** por alumno y por grupo |
 | **Estadísticas** | Tras 5 expediciones, **Thomas Bayes** muestra tiempo, derrotas, quién te vence más y los temas que más se complican: P(acertar) = (aciertos+1)/(intentos+2) |
 
 ### La física como mecánica
@@ -49,6 +50,7 @@ Roguelike de cartas *dark fantasy* para aprender **Dinámica** (Universidad de M
 
 - **Reiniciar contraseña de un alumno…** — el alumno entra con una contraseña nueva sin perder su progreso.
 - **Borrar datos de un alumno / de un grupo / TODO…** — para limpiar pruebas antes de abrir el juego a la clase. Siempre guarda antes un respaldo en tu Drive. Consejo: usa una clave aparte (p. ej. `BETA`) para probar y bórrala con «Borrar datos de un grupo».
+- **Calcular ganancia de aprendizaje (Hake)** — llena la hoja «Diagnóstico» con el inicial, el final y la ganancia g de cada alumno y grupo.
 - **Generar evidencia** y **Crear formulario de retroalimentación** — reporte del proyecto y encuesta para los alumnos.
 
 ### 3. Modo profesor
