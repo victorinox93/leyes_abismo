@@ -21,7 +21,8 @@
 
 var HEAD = {
   Grupos: ['clave', 'nombre', 'activo', 'creado'],
-  Alumnos: ['matricula', 'grupo', 'alias', 'avatar', 'salt', 'hash', 'token', 'creado', 'ultimoAcceso', 'grimorio'],
+  // Ganado/Gastado (v0.32.1): Momentum del alumno, lo escribe el servidor al guardar el Grimorio (no pongas fórmulas aquí)
+  Alumnos: ['matricula', 'grupo', 'alias', 'avatar', 'salt', 'hash', 'token', 'creado', 'ultimoAcceso', 'grimorio', 'Ganado', 'Gastado'],
   Partidas: ['runId', 'matricula', 'grupo', 'alias', 'clase', 'inicio', 'actualizado', 'acto', 'pisoMax', 'vida',
     'puntaje', 'resultado', 'causa', 'combates', 'elites', 'runasOk', 'runasTotal', 'mazo', 'gravedad', 'minutos'],
   Eventos: ['fecha', 'matricula', 'grupo', 'runId', 'tipo', 'concepto', 'correcto', 'detalle'],
@@ -57,6 +58,7 @@ function onOpen() {
     .addItem('Crear formulario de retroalimentación', 'crearFormulario')
     .addSeparator()
     .addItem('Reiniciar contraseña de un alumno…', 'reiniciarContrasena')
+    .addItem('Reparar hoja Alumnos (filas vacías y Momentum)', 'repararAlumnos')
     .addSeparator()
     .addItem('Borrar datos de un alumno…', 'borrarAlumno')
     .addItem('Borrar datos de un grupo…', 'borrarGrupo')
@@ -208,7 +210,7 @@ var ACTIONS = {
     if (findRow_(sh, 1, mat)) throw new Error('Esa matrícula ya tiene cuenta. Usa "Entrar".');
     var salt = Utilities.getUuid();
     var token = Utilities.getUuid();
-    sh.appendRow([mat, grupo, '', '', salt, sha_(salt + r.passHash), token, new Date(), new Date(), '']);
+    sh.appendRow([mat, grupo, '', '', salt, sha_(salt + r.passHash), token, new Date(), new Date(), '', 0, 0]);
     return { ok: true, token: token, matricula: mat, grupo: grupo, alias: '', avatar: '', grimorio: '' };
   },
 
@@ -283,6 +285,8 @@ var ACTIONS = {
   saveCodex: function (r) {
     var u = auth_(r.token);
     u.sh.getRange(u.row, 10).setValue(clean_(r.grimorio, 6000));
+    // Momentum ganado y gastado, para verlo por alumno sin fórmulas
+    try { var g = JSON.parse(r.grimorio || '{}'); u.sh.getRange(u.row, 11, 1, 2).setValues([[num_(g.mGanado), num_(g.mGastado)]]); } catch (e) {}
     return { ok: true };
   },
 
@@ -347,7 +351,7 @@ var ACTIONS = {
       var h = datos[i];
       if (h[2] !== u.grupo || h[1] === u.mat || num_(h[5]) !== acto) continue;
       var item = { id: i + 2, alias: h[3], tipo: h[4], piso: num_(h[6]), jefe: h[7], datos: h[8] };
-      if (h[4] === 'lapida' && lapidas.length < 6) lapidas.push(item);
+      if (h[4] === 'lapida' && lapidas.length < 3 && !vistos['l' + h[1]]) { vistos['l' + h[1]] = true; lapidas.push(item); }
       if (h[4] === 'signo' && signos.length < 3 && !vistos[h[1]]) { vistos[h[1]] = true; signos.push(item); }
     }
     return { ok: true, lapidas: lapidas, signos: signos };
@@ -596,7 +600,9 @@ function sheet_(n) {
 function rows_(n) {
   var sh = sheet_(n);
   if (sh.getLastRow() < 2) return [];
-  return sh.getRange(2, 1, sh.getLastRow() - 1, HEAD[n].length).getValues();
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, HEAD[n].length).getValues();
+  // en Alumnos, una fila sin matrícula no es un alumno (p. ej. fórmulas copiadas hacia abajo)
+  return n === 'Alumnos' ? v.filter(function (r) { return String(r[0]).trim() !== ''; }) : v;
 }
 function findRow_(sh, col, value) {
   if (sh.getLastRow() < 2) return 0;
@@ -737,4 +743,32 @@ function ganancia_(ss, alumnos, eventos) {
   }
   sh.autoResizeColumns(1, 12);
   return txt + '\n\nDetalle en la hoja «Diagnóstico».';
+}
+
+// ───────────────────────── v0.32.1 · Reparar la hoja Alumnos ─────────────────────────
+// Quita filas sin matrícula (p. ej. fórmulas copiadas hacia abajo, que hacían que los
+// alumnos nuevos se agregaran hasta el final), borra fórmulas de Ganado/Gastado y los
+// rellena con el Momentum de cada Grimorio. Hace respaldo antes.
+function repararAlumnos() {
+  var ui = SpreadsheetApp.getUi();
+  if (ui.alert('Reparar hoja Alumnos', 'Se quitan las filas sin matrícula y se rellenan Ganado y Gastado desde el Grimorio de cada alumno. Se hace un respaldo antes. ¿Continuar?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  var copia = respaldo_();
+  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    var sh = sheet_('Alumnos');
+    var w = HEAD.Alumnos.length;
+    sh.getRange(1, 1, 1, w).setValues([HEAD.Alumnos]).setFontWeight('bold').setBackground('#221c2a').setFontColor('#e8c15a');
+    var n = sh.getLastRow() - 1;
+    if (n < 1) { ui.alert('La hoja no tiene alumnos.'); return; }
+    var data = sh.getRange(2, 1, n, w).getValues().filter(function (r) { return String(r[0]).trim() !== ''; });
+    data.forEach(function (r) {
+      var g = {}; try { g = JSON.parse(r[9] || '{}'); } catch (e) {}
+      r[10] = num_(g.mGanado); r[11] = num_(g.mGastado);
+    });
+    sh.getRange(2, 1, n, Math.max(w, sh.getLastColumn())).clearContent();
+    if (data.length) sh.getRange(2, 1, data.length, w).setValues(data);
+    if (sh.getMaxRows() > data.length + 1) sh.deleteRows(data.length + 2, sh.getMaxRows() - data.length - 1);
+  } finally { lock.releaseLock(); }
+  actualizarPanel();
+  ui.alert('Listo', 'Hoja Alumnos reparada (' + (n) + ' filas revisadas). Respaldo: «' + copia + '».', ui.ButtonSet.OK);
 }

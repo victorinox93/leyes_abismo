@@ -11,6 +11,8 @@
 import { api, enqueue, isOnline } from './api';
 import { Game, Run, saveLocal } from './state';
 
+/** Lápidas que se muestran por acto (el servidor también manda a lo más 3, una por compañero) */
+export const MAX_LAPIDAS = 3;
 /** Ergios por honrar una lápida */
 export const HONRA_ERGIOS = 6;
 /** Momentum para el dueño de un signo cada vez que ayuda a ganar (tope por aviso) */

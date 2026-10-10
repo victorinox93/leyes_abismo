@@ -5,7 +5,7 @@ import { T } from '../textos';
 import { W, H } from '../config';
 import { addErgios, FLOORS, Game, MapNode, NodeType, saveLocal, unlock } from '../state';
 import { makeHeroFromAvatar } from '../art/sprites';
-import { cargarHuellas, datosDe, HONRA_ERGIOS, usarHuella } from '../huellas';
+import { cargarHuellas, datosDe, HONRA_ERGIOS, MAX_LAPIDAS, usarHuella } from '../huellas';
 import { ENEMIES } from '../data/enemies';
 import { topBar } from '../ui/hud';
 import { button, embers, engraneGfx, fadeTo, frame, icon, title, Tooltip, txt, vignette } from '../ui/widgets';
@@ -302,7 +302,10 @@ export class MapScene extends Phaser.Scene {
     const h = r.huellas;
     if (!h?.lapidas.length) return;
     const usados = new Map<string, number>();
-    for (const l of h.lapidas) {
+    // máximo 3 por acto y una por compañero (lo más reciente primero)
+    const vistos = new Set<string>();
+    const lista = h.lapidas.filter((l) => !vistos.has(l.alias) && vistos.add(l.alias)).slice(0, MAX_LAPIDAS);
+    for (const l of lista) {
       const enPiso = nodos.filter((n) => n.floor === Math.max(0, Math.min(l.piso, Math.max(...nodos.map((m) => m.floor)))));
       if (!enPiso.length) continue;
       const n = enPiso[l.id % enPiso.length];

@@ -34,6 +34,10 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
 
   create(data: { iniciar?: boolean } = {}) {
+    // Phaser conserva los datos de la última vez que se abrió la escena: si no se borran,
+    // «iniciar» (al volver del diagnóstico) abría la dificultad cada vez que regresabas al menú
+    const iniciar = !!data?.iniciar;
+    this.sys.settings.data = {};
     this.iniciando = false;
     this.cameras.main.fadeIn(300);
     audio.play('menu');
@@ -139,7 +143,7 @@ export class MenuScene extends Phaser.Scene {
     });
     if (isAdmin()) button(this, x, y + Math.ceil(grid.length / 2) * 46, 330, 38, 'Modo profesor (depuración)', () => fadeTo(this, 'Debug'), { color: 0x9a4040, size: 21 });
     // al volver del diagnóstico inicial: directo a elegir la gravedad
-    if (data.iniciar) this.time.delayedCall(400, () => this.pickGravity());
+    if (iniciar) this.time.delayedCall(400, () => this.pickGravity());
   }
 
   /** v0.30: ¿tus signos ayudaron a alguien? ¿honraron tu lápida? (una vez por sesión) */

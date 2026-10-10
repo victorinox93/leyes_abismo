@@ -2,6 +2,12 @@
 
 Lo más reciente primero. El resumen del juego está en el [README](README.md).
 
+## v0.32.1 · Arreglos
+
+- **Menú:** al regresar de una expedición ya no se abre otra vez la ventana de dificultad (el menú «recordaba» que venías del diagnóstico).
+- **Lápidas:** a lo más 3 por acto y una por compañero (las más recientes).
+- **Hoja Alumnos:** las columnas **Ganado** y **Gastado** (Momentum) ahora las escribe el servidor cada vez que se guarda el Grimorio; no hacen falta fórmulas. Las filas sin matrícula ya no cuentan como alumnos en el Panel. Nueva opción del menú Criptas: **«Reparar hoja Alumnos»** (quita filas vacías o con fórmulas copiadas hacia abajo, que hacían que los alumnos nuevos se agregaran hasta el final, y rellena Ganado/Gastado; con respaldo).
+
 ## v0.32.0 · Diagnóstico inicial y final
 
 - **8 preguntas conceptuales** (~4 min, sin cálculos, distintas de las del juego): inercia, 2ª y 3ª ley, fricción, trabajo, energía, impulso y cantidad de movimiento. Opciones barajadas y botón «No lo sé». Se editan en `src/data/diagnostico.ts`.
