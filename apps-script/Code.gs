@@ -377,7 +377,7 @@ var ACTIONS = {
   // ── v0.30 · Estadísticas para la pantalla de Bayes ──
   estadisticas: function (r) {
     var u = auth_(r.token);
-    var partidas = 0, victorias = 0, derrotas = 0, abandonadas = 0, minutos = 0, mejorPiso = 0, mejorActo = 0;
+    var partidas = 0, victorias = 0, derrotas = 0, abandonadas = 0, minutos = 0, mejorPiso = 0, mejorActo = 0, combates = 0, elites = 0;
     var causas = {};
     rows_('Partidas').forEach(function (p) {
       if (p[1] !== u.mat) return;
@@ -388,19 +388,29 @@ var ACTIONS = {
       else if (res === 'derrota') { derrotas++; var c = String(p[12] || '¿?'); causas[c] = (causas[c] || 0) + 1; }
       else abandonadas++;
       minutos += num_(p[19]);
+      combates += num_(p[13]);
+      elites += num_(p[14]);
       mejorPiso = Math.max(mejorPiso, num_(p[8]));
       mejorActo = Math.max(mejorActo, num_(p[7]));
     });
     var temas = {};
+    var jefes = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    // sólo cuentan las preguntas de verdad (no los dones de los ecos ni otros eventos con «concepto»)
+    var PREGUNTAS = { runa: 1, encuentro: 1, minijuego_fin: 1 };
     rows_('Eventos').forEach(function (e) {
-      if (e[1] !== u.mat || !e[5] || e[6] === '') return;
+      if (e[1] !== u.mat) return;
+      if (e[4] === 'acto' && (e[6] === true || e[6] === 'TRUE')) {
+        try { var a = num_(JSON.parse(e[7] || '{}').acto); if (jefes[a] !== undefined) jefes[a]++; } catch (x) {}
+        return;
+      }
+      if (!PREGUNTAS[e[4]] || !e[5] || e[6] === '') return;
       var t = temas[e[5]] || (temas[e[5]] = [0, 0]);
       t[1]++;
       if (e[6] === true || e[6] === 'TRUE' || e[6] === 'true') t[0]++;
     });
     var lt = Object.keys(temas).map(function (k) { return [k, temas[k][0], temas[k][1]]; });
     var lc = Object.keys(causas).map(function (k) { return [k, causas[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
-    return { ok: true, partidas: partidas, victorias: victorias, derrotas: derrotas, abandonadas: abandonadas, minutos: minutos, mejorPiso: mejorPiso, mejorActo: mejorActo, causas: lc, temas: lt };
+    return { ok: true, partidas: partidas, victorias: victorias, derrotas: derrotas, abandonadas: abandonadas, minutos: minutos, mejorPiso: mejorPiso, mejorActo: mejorActo, combates: combates, elites: elites, jefes: jefes, causas: lc, temas: lt };
   },
 
   logEvent: function (r) {

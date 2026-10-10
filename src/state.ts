@@ -138,6 +138,7 @@ export interface Codex {
   compras?: string[]; // accesorios y cosméticos comprados a Layla
   regalo?: string; // último día (AAAA-MM-DD) en que Layla dio su regalo diario
   expediciones?: number; // expediciones terminadas (muerte o victoria); abre la Tienda de Layla
+  bajas?: Record<string, number>; // v0.31.2: enemigos vencidos por id (pantalla de Estadísticas)
 }
 export type CodexKind = 'enemies' | 'npcs' | 'figures' | 'cards' | 'relics' | 'boons' | 'effects';
 
@@ -163,6 +164,9 @@ export function mergeCodex(a: Partial<Codex> | null | undefined, b: Partial<Code
   c.mGanado = Math.max(a?.mGanado ?? 0, b?.mGanado ?? 0);
   c.mGastado = Math.max(a?.mGastado ?? 0, b?.mGastado ?? 0);
   c.expediciones = Math.max(a?.expediciones ?? 0, b?.expediciones ?? 0);
+  const bajas: Record<string, number> = { ...(a?.bajas ?? {}) };
+  for (const [k, v] of Object.entries(b?.bajas ?? {})) bajas[k] = Math.max(bajas[k] ?? 0, v);
+  if (Object.keys(bajas).length) c.bajas = bajas;
   c.compras = [...new Set([...(a?.compras ?? []), ...(b?.compras ?? [])])];
   const rg = [a?.regalo ?? '', b?.regalo ?? ''].sort().pop();
   if (rg) c.regalo = rg;
@@ -236,6 +240,13 @@ export function expediciones() {
   const c = Game.codex;
   if (c.expediciones !== undefined) return c.expediciones;
   return Math.max(c.victorias ?? 0, (c.xp ?? 0) > 0 || (c.mGanado ?? 0) > 0 ? 1 : 0);
+}
+/** Un enemigo vencido más (no cuenta en el modo profesor) */
+export function contarBaja(id: string) {
+  if (Game.run?.debug) return;
+  const b = (Game.codex.bajas ??= {});
+  b[id] = (b[id] ?? 0) + 1;
+  codexDirty = true;
 }
 export function contarExpedicion() {
   Game.codex.expediciones = expediciones() + 1;

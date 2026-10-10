@@ -56,6 +56,7 @@ export interface Huella {
 export interface Estadisticas {
   partidas: number; victorias: number; derrotas: number; abandonadas: number;
   minutos: number; mejorPiso: number; mejorActo: number;
+  combates?: number; elites?: number; jefes?: Record<string, number>; // v0.31.2
   causas: [string, number][];
   temas: [string, number, number][]; // [concepto, aciertos, intentos]
 }

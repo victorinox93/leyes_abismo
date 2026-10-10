@@ -2,6 +2,13 @@
 
 Lo más reciente primero. El resumen del juego está en el [README](README.md).
 
+## v0.31.2 · Estadísticas más útiles
+
+- **Estadísticas de Bayes en tres columnas:** resumen (ahora con combates ganados, élites y enemigos vencidos), **jefes derrotados** con su conteo (Coloso, Bruja, Hibbelerius y AM, que sigue oculto hasta abrir el Núcleo), **quién te ha vencido más** (top 3) y **a quién has vencido más** (top 3), y los temas.
+- **Temas:** sólo cuentan preguntas reales (runas, encuentros y «¿Más o menos?»); antes se colaban los nombres de los ecos al elegir un don. Los temas se muestran con nombres legibles («Fricción», «Conservación de la energía», «2ª ley de Newton»).
+- El Grimorio cuenta los enemigos vencidos por tipo (`codex.bajas`), desde esta versión.
+- Requiere publicar el nuevo `Code.gs` (endpoint `estadisticas`).
+
 ## v0.31.1 · Dones legibles
 
 - Santuario: el nombre, la etiqueta, el efecto, la radiación y la cita de cada don se apilan según su alto real y se encogen si hace falta; si aun así no cabe, la cita queda sólo en el tooltip. Ya no se salen de la caja (p. ej. con Bayes o con 4 opciones por un dúo).

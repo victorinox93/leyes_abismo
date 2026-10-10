@@ -17,7 +17,7 @@ function umbralDe(st: EnemyState) {
 const ESQUIVA = 6;
 import { dejarSigno, usarHuella } from '../huellas';
 import { AddCards, danoDe, encounters, ENEMIES, EnemyState, Intent, pick, spawn } from '../data/enemies';
-import { addEntropia, addErgios, boonLevel, codexFlag, amVencido, codexWin, contarHib, Game, nucleoDisponible, otorgarInsigniaAM, logEvent, saveLocal, syncRun, unlock } from '../state';
+import { addEntropia, addErgios, boonLevel, codexFlag, amVencido, codexWin, contarHib, Game, nucleoDisponible, otorgarInsigniaAM, logEvent, saveLocal, syncRun, unlock, contarBaja } from '../state';
 import { CONDITION_CHANCE, CONDITIONS, ConditionDef } from '../data/conditions';
 import { FAMILIARS } from '../data/familiars';
 import { ALMAS } from '../data/almas';
@@ -1859,6 +1859,7 @@ export class CombatScene extends Phaser.Scene {
     {
       const run = Game.run!;
       run.stats.kills = (run.stats.kills ?? 0) + 1;
+      contarBaja(ev.st.def.id);
       const vv = boonLevel('duo_visviva'); // Châtelet + Coriolis
       if (vv && !this.bannerT.getData('dead')) { this.energy += vv; this.calc(`Teorema Trabajo-Energía: la energía del enemigo vuelve a ti (+${vv} J)`); this.refreshPlayer(); }
       const mul = JEFES.includes(ev.st.def.id) ? PUNTOS.jefeMul : this.kind === 'elite' && ev.st.maxHp >= 50 ? PUNTOS.eliteMul : 1;
